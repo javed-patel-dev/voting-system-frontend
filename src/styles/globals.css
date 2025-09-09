@@ -54,26 +54,4 @@
   body {
     @apply bg-background text-foreground;
   }
-  
-  input, textarea, select {
-    @apply bg-input text-foreground border rounded px-3 py-2 outline-none;
-    font-family: inherit;
-    font-size: 1rem;
-    transition: border-color 0.2s ease;
-  }
-
-  input:focus, textarea:focus, select:focus {
-    @apply border-primary;
-  }
-
-  button {
-    @apply bg-primary text-primary-foreground px-4 py-2 rounded cursor-pointer;
-    font-family: inherit;
-    font-size: 1rem;
-    transition: background-color 0.2s ease;
-  }
-
-  button:hover {
-    @apply bg-primary-foreground text-primary;
-  }
 }

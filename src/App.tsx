@@ -4,6 +4,8 @@ import { RootState } from "@/store/store";
 import AdminDashboard from "./pages/AdminDashboard";
 import VoterLanding from "./pages/VoterLanding";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
 function App() {
   const auth = useSelector((state: RootState) => state.auth);
@@ -24,6 +26,24 @@ function App() {
             isAuthenticated
               ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/voter/home"} replace />
               : <LoginPage />
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            isAuthenticated
+              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/voter/home"} replace />
+              : <RegisterPage />
+          }
+        />
+
+        <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated
+              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/voter/home"} replace />
+              : <ForgotPasswordPage />
           }
         />
 
