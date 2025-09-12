@@ -183,7 +183,7 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-slate-100 to-cyan-50 p-4">
             {/* Background decoration */}
             <div className="absolute inset-0 bg-grid-black/[0.02] bg-[size:20px_20px]" />
             <div className="absolute top-0 right-0 -z-10 transform-gpu overflow-hidden">

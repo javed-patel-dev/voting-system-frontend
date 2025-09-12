@@ -1,3 +1,17 @@
+import { CandidateCard } from "@/components/CandidateCard";
+import { Footer } from "@/components/Footer";
+import { HeroSection } from "@/components/HeroSection";
+import { Navbar } from "@/components/NavBar";
+import { PollCard } from "@/components/PollCard";
+
 export default function VoterLanding() {
-    return <div className="p-8">Welcome to Voter Landing Page</div>;
+    return (
+        <div>
+            <Navbar />
+            <HeroSection />
+            <PollCard />
+            <CandidateCard />
+            <Footer />
+        </div>
+    );  
 }

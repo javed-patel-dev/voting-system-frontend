@@ -24,7 +24,7 @@ function App() {
           path="/login"
           element={
             isAuthenticated
-              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/voter/home"} replace />
+              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
               : <LoginPage />
           }
         />
@@ -33,7 +33,7 @@ function App() {
           path="/register"
           element={
             isAuthenticated
-              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/voter/home"} replace />
+              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
               : <RegisterPage />
           }
         />
@@ -42,7 +42,7 @@ function App() {
           path="/forgot-password"
           element={
             isAuthenticated
-              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/voter/home"} replace />
+              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
               : <ForgotPasswordPage />
           }
         />
@@ -59,7 +59,7 @@ function App() {
 
         {/* Protected Voter route */}
         <Route
-          path="/voter/home"
+          path="/home"
           element={
             isAuthenticated && userRole === "VOTER"
               ? <VoterLanding />
@@ -73,7 +73,7 @@ function App() {
           element={
             <Navigate to={
               isAuthenticated
-                ? (userRole === "ADMIN" ? "/admin/dashboard" : "/voter/home")
+                ? (userRole === "ADMIN" ? "/admin/dashboard" : "/home")
                 : "/login"
             } replace />
           }

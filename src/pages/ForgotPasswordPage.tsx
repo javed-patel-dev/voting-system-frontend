@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Vote, Mail, Lock, AlertCircle, CheckCircle, X, Check, Send, Timer, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle, X, Check, Send, Timer, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,8 +29,7 @@ export default function ForgotPasswordPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [otpTimer, setOtpTimer] = useState(0);
-    const [otpSent, setOtpSent] = useState(false);
+    const [otpTimer, setOtpTimer] = useState(0);   
 
     // Password validation
     const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirement[]>([
@@ -95,7 +94,6 @@ export default function ForgotPasswordPage() {
             const response = await authService.resetPasswordOTP(formData.email);
 
             if (response.success) {
-                setOtpSent(true);
                 setOtpTimer(60); // 1 minute
                 setStep("verification");
                 setSuccess("Password reset code sent! Check your email.");
@@ -175,7 +173,7 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-slate-100 to-red-50 p-4">
             {/* Background decoration */}
             <div className="absolute inset-0 bg-grid-black/[0.02] bg-[size:20px_20px]" />
             <div className="absolute top-0 right-0 -z-10 transform-gpu overflow-hidden">
