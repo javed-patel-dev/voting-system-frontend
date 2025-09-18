@@ -4,6 +4,7 @@ type TokenPayload = {
   id: string;
   email: string;
   role: "ADMIN" | "VOTER" | "CANDIDATE";
+  name: string;
   iat: number;
   exp: number;
 };

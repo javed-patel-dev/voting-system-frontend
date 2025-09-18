@@ -6,6 +6,8 @@ import VoterLanding from "./pages/VoterLanding";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import { ProtectedRoute } from "./components/ProtectedRoutes";
+import { PollDetailPage } from "./pages/PollPage";
 
 function App() {
   const auth = useSelector((state: RootState) => state.auth);
@@ -47,13 +49,18 @@ function App() {
           }
         />
 
+        <Route
+          path="/polls"
+          element={<PollDetailPage />}
+        />
+
         {/* Protected Admin route */}
         <Route
           path="/admin/dashboard"
           element={
-            isAuthenticated && userRole === "ADMIN"
-              ? <AdminDashboard />
-              : <Navigate to="/login" replace />
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
           }
         />
 
@@ -61,9 +68,9 @@ function App() {
         <Route
           path="/home"
           element={
-            isAuthenticated && userRole === "VOTER"
-              ? <VoterLanding />
-              : <Navigate to="/login" replace />
+            <ProtectedRoute allowedRoles={["VOTER", "CANDIDATE"]}>
+              <VoterLanding />
+            </ProtectedRoute>
           }
         />
 

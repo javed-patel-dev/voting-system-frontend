@@ -3,9 +3,11 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface DecodedToken {
   role: string;
-  id?: string;
-  email?: string;
-  exp?: number;
+  id: string;
+  email: string;
+  name: string;
+  iat: number;
+  exp: number;
 }
 
 export interface AuthState {
