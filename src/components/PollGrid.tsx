@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { PollCard } from "./PollCard";
 import { Pagination } from "./Pagination";
 import pollService from "@/services/pollService";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 interface Poll {
     _id: string;
@@ -70,12 +70,16 @@ export const PollGrid = () => {
                 {isLoading ? (
                     <p>Loading polls...</p>
                 ) : (
-                    data.data.data.map((poll) => <PollCard poll={poll} />)
+                    data.data.data.map((poll) => (
+                        <Link key={poll._id} to={`/polls/${poll._id}`}>
+                            <PollCard poll={poll} />
+                        </Link>
+                    ))
                 )}
             </div>
 
             {data.data.data.length > 0 ? (
-                <div className="hidden md:block">
+                <div className="hidden md:block mt-4">
                     <Pagination
                         title="Polls"
                         count={data.data.total}

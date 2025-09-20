@@ -1,39 +1,35 @@
-import axios from "axios";
+import axiosInstance from "./axiosInstance";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const AUTH_PATH = "/auth";
 
 const login = (email: string, password: string) =>
-  axios
-    .post(`${BASE_URL}/auth/login`, { email, password })
+  axiosInstance
+    .post(`${AUTH_PATH}/login`, { email, password })
     .then((res) => res.data);
 
-const register = (email: string, password: string, name: string, otp: string) =>
-  axios
-    .post(`${BASE_URL}/users/register`, { email, password, name, otp })
-    .then((res) => res.data);
-
-const resetPassword = (
-  email: string,
-  password: string,
-  otp: string
-) =>
-  axios
-    .post(`${BASE_URL}/auth/reset/password`, { email, password, otp })
+const resetPassword = (email: string, password: string, otp: string) =>
+  axiosInstance
+    .post(`${AUTH_PATH}/auth/reset/password`, { email, password, otp })
     .then((res) => res.data);
 
 const registrationOTP = (email: string) =>
-  axios
-    .post(`${BASE_URL}/auth/registration/otp`, { email })
+  axiosInstance
+    .post(`${AUTH_PATH}/auth/registration/otp`, { email })
     .then((res) => res.data);
 
 const resetPasswordOTP = (email: string) =>
-  axios
-    .post(`${BASE_URL}/auth/password/reset/otp`, { email })
+  axiosInstance
+    .post(`${AUTH_PATH}/auth/password/reset/otp`, { email })
     .then((res) => res.data);
 
 const verifyOTP = (email: string, otp: string, purpose: string) =>
-  axios
-    .post(`${BASE_URL}/auth/otp/verify`, { email, otp, purpose })
+  axiosInstance
+    .post(`${AUTH_PATH}/auth/otp/verify`, { email, otp, purpose })
+    .then((res) => res.data);
+
+const register = (email: string, password: string, name: string, otp: string) =>
+  axiosInstance
+    .post(`/users/register`, { email, password, name, otp })
     .then((res) => res.data);
 
 export default {

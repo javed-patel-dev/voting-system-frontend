@@ -1,4 +1,3 @@
-import { CandidateCard } from "@/components/CandidateCard";
 import { Footer } from "@/components/Footer";
 import { HeroSection } from "@/components/HeroSection";
 import { Navbar } from "@/components/NavBar";
@@ -12,7 +11,6 @@ export default function VoterLanding() {
             <div>
                 <PollGrid />
             </div>
-            <CandidateCard />
             <Footer />
         </div>
     );  

@@ -50,7 +50,7 @@ function App() {
         />
 
         <Route
-          path="/polls"
+          path="/polls/:pollId"
           element={<PollDetailPage />}
         />
 

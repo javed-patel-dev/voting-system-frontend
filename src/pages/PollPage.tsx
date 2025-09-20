@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-    Clock, Calendar, MapPin, TrendingUp,
-    AlertCircle, ArrowLeft
-} from "lucide-react";
+import { Clock, Calendar, MapPin, TrendingUp, AlertCircle, ArrowLeft } from "lucide-react";
 import { Candidate, CandidateTable } from "@/components/CandidateTable";
+import { useNavigate, useParams } from "react-router-dom";
+import analyticService from "@/services/analyticService";
+import voteService from "@/services/voteService";
+import pollService from "@/services/pollService";
 
 
 export interface Poll {
@@ -16,69 +17,51 @@ export interface Poll {
     startDate: string;
     endDate: string;
     status: 'upcoming' | 'active' | 'ended';
-    totalVotes: number;
-    category: string;
-    candidates: Candidate[];
-    canVote?: boolean; // API will determine this based on user and time
 }
 
-export const PollDetailPage = () => {
-    // const { pollId } = useParams();
-    // const navigate = useNavigate();
 
-    const [poll, setPoll] = useState<Poll | null>(null);
+export const PollDetailPage = () => {
+    const { pollId } = useParams();
+    const navigate = useNavigate();
+
+    const [poll, setPoll] = useState<Poll>({} as Poll);
+    const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [loading, setLoading] = useState(true);
     const [voting, setVoting] = useState(false);
-    const [userVote, setUserVote] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string>("");
+    const [status, setStatus] = useState<'upcoming' | 'active' | 'ended'>('upcoming');
+    
+    const totalVotes = candidates.reduce((sum, candidate) => sum + candidate.voteCount, 0);
 
-    // Mock poll data - replace with actual API call
     useEffect(() => {
         const fetchPoll = async () => {
             try {
                 setLoading(true);
-                // Replace with actual API call
-                // const response = await pollService.getPollById(pollId);
 
-                // Mock data
-                const mockPoll: Poll = {
-                    _id: "1",
-                    title: "2024 Presidential Election",
-                    description: "Cast your vote for the next president of the country. This election will determine the leadership for the next four years and shape the future of our nation.",
-                    startDate: "2024-01-01T00:00:00Z",
-                    endDate: "2024-12-31T23:59:59Z",
-                    status: "active",
-                    totalVotes: 25750,
-                    category: "National Election",
-                    canVote: true,
-                    candidates: [
-                        {
-                            _id: "1",
-                            name: "John Smith",
-                            party: "Democratic Party",
-                            description: "Experienced leader with 20 years in public service",
-                            voteCount: 15420
-                        },
-                        {
-                            _id: "2",
-                            name: "Jane Doe",
-                            party: "Republican Party",
-                            description: "Business leader focused on economic growth",
-                            voteCount: 10330
-                        },
-                        {
-                            _id: "3",
-                            name: "Robert Johnson",
-                            party: "Independent",
-                            description: "Reform-minded candidate for change",
-                            voteCount: 0
+                const [response, pollResponse] = await Promise.all([
+                    analyticService.listCandidatesPerPollsWithVotes({ filter: { pollId } }),
+                    pollService.fetchPollById(pollId || "")
+                ]);
+
+                if (response.success) {
+                    setPoll(pollResponse.data);
+                    setCandidates(response.data.data[0]?.candidates || []);
+
+                    // Only run updateTimer if poll data is available
+                    if (pollResponse.data && pollResponse.data.startDate && pollResponse.data.endDate) {
+                        const now = new Date().getTime();
+                        const startTime = new Date(pollResponse.data.startDate).getTime();
+                        const endTime = new Date(pollResponse.data.endDate).getTime();
+
+                        if (now < startTime) {
+                            setStatus('upcoming');
+                        } else if (now >= startTime && now < endTime) {
+                            setStatus('active');
+                        } else {
+                            setStatus('ended');
                         }
-                    ]
-                };
-
-                setPoll(mockPoll);
-                // Check if user has already voted
-                // setUserVote(response.userVote || null);
+                    }
+                }
 
             } catch (error) {
                 setError("Failed to load poll details");
@@ -97,56 +80,39 @@ export const PollDetailPage = () => {
         try {
             setVoting(true);
 
-            // Replace with actual API call
-            // const response = await pollService.vote(poll._id, candidateId);
+            const response = await voteService.castVote({ candidateId, pollId: poll._id });
 
-            // Mock API response handling
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Mock different responses to show error handling
-            const mockResponses = [
-                { success: true, message: "Vote cast successfully!" },
-                { success: false, message: "Poll has ended. Voting is no longer allowed." },
-                { success: false, message: "You have already voted in this poll." },
-                { success: false, message: "Voting period has not started yet." }
-            ];
-
-            const mockResponse = mockResponses[0]; // Change index to test different responses
-
-            if (mockResponse.success) {
-                // toast.success(mockResponse.message);
-                console.log("Success:", mockResponse.message);
-
-                // Update local state
-                setUserVote(candidateId);
-                setPoll(prevPoll => {
-                    if (!prevPoll) return prevPoll;
-                    return {
-                        ...prevPoll,
-                        candidates: prevPoll.candidates.map(candidate =>
-                            candidate._id === candidateId
-                                ? { ...candidate, voteCount: candidate.voteCount + 1 }
-                                : candidate
-                        ),
-                        totalVotes: prevPoll.totalVotes + 1,
-                        canVote: false // User can't vote again
-                    };
+            if (response.success) {
+                setCandidates(prevCandidates => {
+                    if (!prevCandidates) return prevCandidates;
+                    return prevCandidates.map(candidate =>
+                        candidate._id === candidateId
+                            ? { ...candidate, voteCount: candidate.voteCount + 1 }
+                            : candidate
+                    );
                 });
 
             } else {
-                // toast.error(mockResponse.message);
-                console.error("Error:", mockResponse.message);
-                setError(mockResponse.message);
+                // toast.error(response.message);
+                console.error("Error:", response.message);
+                setError(response.message);
 
                 // If poll ended, update state
-                if (mockResponse.message.includes("ended")) {
-                    setPoll(prevPoll => prevPoll ? { ...prevPoll, canVote: false, status: "ended" } : prevPoll);
+                if (response.message.includes("ended")) {
+                    setCandidates(prevCandidates => {
+                        if (!prevCandidates) return prevCandidates;
+                        return prevCandidates.map(candidate =>
+                            candidate._id === candidateId
+                                ? { ...candidate, voteCount: candidate.voteCount + 1 }
+                                : candidate
+                        );
+                    });
                 }
+
             }
 
         } catch (error) {
             const errorMessage = "Failed to cast vote. Please try again.";
-            // toast.error(errorMessage);
             console.error("Vote error:", error);
             setError(errorMessage);
         } finally {
@@ -202,7 +168,7 @@ export const PollDetailPage = () => {
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Poll Not Found</h2>
                     <p className="text-gray-600 mb-4">The poll you're looking for doesn't exist or has been removed.</p>
                     <Button
-                        onClick={() => {/* navigate('/polls') */ }}
+                        onClick={() => { navigate('/home'); }}
                         className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                     >
                         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -213,7 +179,7 @@ export const PollDetailPage = () => {
         );
     }
 
-    const statusConfig = getStatusConfig(poll.status);
+    const statusConfig = getStatusConfig(status);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -224,7 +190,7 @@ export const PollDetailPage = () => {
                     {/* Back Button */}
                     <Button
                         variant="ghost"
-                        onClick={() => {/* navigate('/polls') */ }}
+                        onClick={() => { navigate('/home'); }}
                         className="text-white hover:bg-white/20 mb-6"
                     >
                         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -240,7 +206,7 @@ export const PollDetailPage = () => {
                                 </Badge>
                                 <Badge variant="outline" className="bg-white/20 text-white border-white/30">
                                     <MapPin className="h-3 w-3 mr-1" />
-                                    {poll.category}
+                                    {poll.title}
                                 </Badge>
                             </div>
 
@@ -254,12 +220,12 @@ export const PollDetailPage = () => {
 
                         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
                             <div className="text-center">
-                                <div className="text-3xl font-bold mb-2">{poll.totalVotes.toLocaleString()}</div>
+                                <div className="text-3xl font-bold mb-2">{totalVotes.toLocaleString()}</div>
                                 <div className="text-white/80 text-sm font-medium mb-4">Total Votes Cast</div>
 
                                 <div className="grid grid-cols-2 gap-4 text-center">
                                     <div>
-                                        <div className="text-2xl font-bold">{poll.candidates.length}</div>
+                                        <div className="text-2xl font-bold">{candidates.length}</div>
                                         <div className="text-white/80 text-xs">Candidates</div>
                                     </div>
                                     <div>
@@ -287,11 +253,10 @@ export const PollDetailPage = () => {
 
                 {/* Candidates Table */}
                 <CandidateTable
-                    candidates={poll.candidates}
-                    canVote={poll.canVote || false}
+                    candidates={candidates}
+                    canVote={status === 'active'}
                     onVote={handleVote}
                     loading={voting}
-                    userVote={userVote}
                 />
             </div>
         </div>

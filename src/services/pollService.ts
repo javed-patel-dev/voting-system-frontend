@@ -1,14 +1,14 @@
-import axios from "axios";
+import axiosInstance from "./axiosInstance";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const POLL_API_URL = `${BASE_URL}/polls`;
+const POLL_API_URL = '/polls';
 
 const fetchPolls = (payload: { page: number; limit: number; filter: object }) =>
-  axios
-    .post(`${POLL_API_URL}/list`, payload)
-    .then((res) => res.data);
+  axiosInstance.post(`${POLL_API_URL}/list`, payload).then((res) => res.data);
 
+const fetchPollById = (pollId: string) =>
+  axiosInstance.get(`${POLL_API_URL}/${pollId}`).then((res) => res.data);
 
 export default {
   fetchPolls,
+  fetchPollById,
 };
