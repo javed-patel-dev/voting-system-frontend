@@ -25,34 +25,37 @@ function App() {
         <Route
           path="/login"
           element={
-            isAuthenticated
-              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
-              : <LoginPage />
+            isAuthenticated ? (
+              <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
+            ) : (
+              <LoginPage />
+            )
           }
         />
 
         <Route
           path="/register"
           element={
-            isAuthenticated
-              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
-              : <RegisterPage />
+            isAuthenticated ? (
+              <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
+            ) : (
+              <RegisterPage />
+            )
           }
         />
 
         <Route
           path="/forgot-password"
           element={
-            isAuthenticated
-              ? <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
-              : <ForgotPasswordPage />
+            isAuthenticated ? (
+              <Navigate to={userRole === "ADMIN" ? "/admin/dashboard" : "/home"} replace />
+            ) : (
+              <ForgotPasswordPage />
+            )
           }
         />
 
-        <Route
-          path="/polls/:pollId"
-          element={<PollDetailPage />}
-        />
+        <Route path="/polls/:pollId" element={<PollDetailPage />} />
 
         {/* Protected Admin route */}
         <Route
@@ -78,11 +81,12 @@ function App() {
         <Route
           path="/"
           element={
-            <Navigate to={
-              isAuthenticated
-                ? (userRole === "ADMIN" ? "/admin/dashboard" : "/home")
-                : "/login"
-            } replace />
+            <Navigate
+              to={
+                isAuthenticated ? (userRole === "ADMIN" ? "/admin/dashboard" : "/home") : "/login"
+              }
+              replace
+            />
           }
         />
 
