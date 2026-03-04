@@ -1,13 +1,14 @@
-import { useSelector } from "react-redux";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RootState } from "@/store/store";
-import AdminDashboard from "./pages/AdminDashboard";
-import VoterLanding from "./pages/VoterLanding";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import { useSelector } from "react-redux";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoutes";
+import AdminDashboard from "./pages/AdminDashboard";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import LoginPage from "./pages/LoginPage";
 import { PollDetailPage } from "./pages/PollPage";
+import ProfilePage from "./pages/ProfilePage";
+import RegisterPage from "./pages/RegisterPage";
+import VoterLanding from "./pages/VoterLanding";
 
 function App() {
   const auth = useSelector((state: RootState) => state.auth);
@@ -73,6 +74,16 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["VOTER", "CANDIDATE"]}>
               <VoterLanding />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Profile page - accessible by all authenticated users */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={["VOTER", "ADMIN"]}>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />
