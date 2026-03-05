@@ -1,3 +1,4 @@
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import analyticService from "@/services/analyticService";
 import pollService from "@/services/pollService";
 import { logout } from "@/store/slices/authSlice";
+import { getApiErrorMessage } from "@/utils/errorHelper";
 import { toast } from "@/utils/toast";
 import {
   AlertCircle,
@@ -16,6 +18,7 @@ import {
   ChevronDown,
   Clock,
   Eye,
+  Flame,
   LogOut,
   Plus,
   Search,
@@ -40,6 +43,20 @@ interface DashboardStats {
   activePolls: number;
   totalVotes: number;
   uniqueVoters: number;
+  upcomingPolls: number;
+  endedPolls: number;
+  trendingCandidates: Array<{
+    candidateId: string;
+    voteCount: number;
+    user: { _id: string; name: string; email: string };
+    poll: { _id: string; title: string };
+  }>;
+  popularPolls: Array<{
+    pollId: string;
+    voteCount: number;
+    title: string;
+    status: string;
+  }>;
 }
 
 interface Poll {
@@ -48,12 +65,9 @@ interface Poll {
   description: string;
   startDate: string;
   endDate: string;
-  status?: string;
-  computedStatus?: string;
   isResultDeclared?: boolean;
   candidatesCount?: number;
   totalVotes?: number;
-  createdAt: string;
 }
 
 interface CreatePollForm {
@@ -63,28 +77,32 @@ interface CreatePollForm {
   endDate: string;
 }
 
-// Admin Navbar Component
+interface ConfirmAction {
+  type: "declare" | "delete";
+  pollId: string;
+  pollTitle: string;
+}
+
+// Admin Navbar
 const AdminNavbar = ({ onLogout }: { onLogout: () => void }) => {
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
 
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <Vote className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-sm text-gray-600">Voting System Management</p>
-            </div>
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+            <Vote className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="text-sm text-gray-600">Voting System Management</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
 
@@ -92,7 +110,7 @@ const AdminNavbar = ({ onLogout }: { onLogout: () => void }) => {
             <Button
               variant="ghost"
               className="flex items-center space-x-2"
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              onClick={() => setShowDropdown(!showDropdown)}
             >
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                 <Users className="h-4 w-4 text-white" />
@@ -101,8 +119,8 @@ const AdminNavbar = ({ onLogout }: { onLogout: () => void }) => {
               <ChevronDown className="h-4 w-4" />
             </Button>
 
-            {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border py-2 z-50">
                 <button
                   onClick={() => navigate("/profile")}
                   className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -127,44 +145,37 @@ const AdminNavbar = ({ onLogout }: { onLogout: () => void }) => {
   );
 };
 
-// Dashboard Stats Widget
+// Stats Widget
 const StatsWidget = ({
   title,
   value,
   icon: Icon,
   subtitle,
-  onClick,
   gradient = "from-blue-600 to-cyan-600",
 }: {
   title: string;
   value: number | string;
   icon: React.ElementType;
   subtitle?: string;
-  onClick?: () => void;
   gradient?: string;
-}) => {
-  return (
-    <Card
-      className="hover:shadow-lg transition-all duration-300 cursor-pointer group border-0 shadow-md"
-      onClick={onClick}
-    >
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-500">{title}</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
-          </div>
-          <div
-            className={`w-14 h-14 bg-gradient-to-r ${gradient} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}
-          >
-            <Icon className="h-7 w-7 text-white" />
-          </div>
+}) => (
+  <Card className="hover:shadow-lg transition-all border-0 shadow-md group">
+    <CardContent className="p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
+          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
         </div>
-      </CardContent>
-    </Card>
-  );
-};
+        <div
+          className={`w-14 h-14 bg-gradient-to-r ${gradient} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}
+        >
+          <Icon className="h-7 w-7 text-white" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 // Create Poll Modal
 const CreatePollModal = ({
@@ -195,10 +206,10 @@ const CreatePollModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95">
+        <div className="p-6 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">Create New Poll</h2>
+            <h2 className="text-xl font-bold">Create New Poll</h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>
@@ -214,7 +225,7 @@ const CreatePollModal = ({
             <Input
               id="title"
               value={formData.title}
-              onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+              onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
               placeholder="e.g., Best Teacher Election 2026"
               className="mt-1"
               required
@@ -226,9 +237,9 @@ const CreatePollModal = ({
             <textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
               placeholder="Describe what this poll is about..."
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               rows={3}
               required
             />
@@ -241,7 +252,7 @@ const CreatePollModal = ({
                 id="startDate"
                 type="datetime-local"
                 value={formData.startDate}
-                onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))}
+                onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
                 className="mt-1"
                 required
               />
@@ -252,7 +263,7 @@ const CreatePollModal = ({
                 id="endDate"
                 type="datetime-local"
                 value={formData.endDate}
-                onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
+                onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))}
                 className="mt-1"
                 required
               />
@@ -266,7 +277,7 @@ const CreatePollModal = ({
             <Button
               type="submit"
               disabled={loading}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="bg-gradient-to-r from-blue-600 to-purple-600"
             >
               {loading ? "Creating..." : "Create Poll"}
             </Button>
@@ -277,7 +288,7 @@ const CreatePollModal = ({
   );
 };
 
-// Poll Card for Admin
+// Admin Poll Card
 const AdminPollCard = ({
   poll,
   onView,
@@ -290,38 +301,18 @@ const AdminPollCard = ({
   onDelete: () => void;
 }) => {
   const now = new Date();
-  const startDate = new Date(poll.startDate);
-  const endDate = new Date(poll.endDate);
+  const start = new Date(poll.startDate);
+  const end = new Date(poll.endDate);
 
   let status: "UPCOMING" | "ACTIVE" | "ENDED" = "UPCOMING";
-  if (now >= startDate && now < endDate) {
-    status = "ACTIVE";
-  } else if (now >= endDate) {
-    status = "ENDED";
-  }
+  if (now >= start && now < end) status = "ACTIVE";
+  else if (now >= end) status = "ENDED";
 
-  const getStatusConfig = () => {
-    switch (status) {
-      case "UPCOMING":
-        return { bg: "bg-blue-100", text: "text-blue-800", label: "Upcoming" };
-      case "ACTIVE":
-        return { bg: "bg-green-100", text: "text-green-800", label: "Active" };
-      case "ENDED":
-        return { bg: "bg-gray-100", text: "text-gray-800", label: "Ended" };
-    }
-  };
-
-  const statusConfig = getStatusConfig();
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const statusConfig = {
+    UPCOMING: { bg: "bg-blue-100", text: "text-blue-800", label: "Upcoming" },
+    ACTIVE: { bg: "bg-green-100", text: "text-green-800", label: "Active" },
+    ENDED: { bg: "bg-gray-100", text: "text-gray-800", label: "Ended" },
+  }[status];
 
   return (
     <Card className="hover:shadow-lg transition-all border-0 shadow-md">
@@ -339,18 +330,17 @@ const AdminPollCard = ({
                 </Badge>
               )}
             </div>
-            <h3 className="font-semibold text-gray-900 text-lg">{poll.title}</h3>
+            <h3 className="font-semibold text-lg">{poll.title}</h3>
             <p className="text-sm text-gray-500 line-clamp-2 mt-1">{poll.description}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {formatDate(poll.startDate)}
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+          <Calendar className="h-3 w-3" />
+          <span>
+            {new Date(poll.startDate).toLocaleDateString()} -{" "}
+            {new Date(poll.endDate).toLocaleDateString()}
           </span>
-          <span>to</span>
-          <span>{formatDate(poll.endDate)}</span>
         </div>
 
         <div className="flex items-center gap-2 pt-3 border-t">
@@ -365,7 +355,7 @@ const AdminPollCard = ({
               className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white"
             >
               <Trophy className="h-4 w-4 mr-1" />
-              Declare Results
+              Declare
             </Button>
           )}
           <Button
@@ -382,7 +372,7 @@ const AdminPollCard = ({
   );
 };
 
-// Main Admin Dashboard
+// Main Component
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -393,6 +383,9 @@ const AdminDashboard = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Confirmation modal state
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+
   // Dashboard Stats
   const [stats, setStats] = useState<DashboardStats>({
     totalVoters: 0,
@@ -401,12 +394,15 @@ const AdminDashboard = () => {
     activePolls: 0,
     totalVotes: 0,
     uniqueVoters: 0,
+    upcomingPolls: 0,
+    endedPolls: 0,
+    trendingCandidates: [],
+    popularPolls: [],
   });
 
-  // Polls
   const [polls, setPolls] = useState<Poll[]>([]);
 
-  // Fetch Dashboard Stats
+  // Fetch Stats
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -419,13 +415,16 @@ const AdminDashboard = () => {
             activePolls: response.data.activePolls || 0,
             totalVotes: response.data.totalVotes || 0,
             uniqueVoters: response.data.uniqueVoters || 0,
+            upcomingPolls: response.data.upcomingPolls || 0,
+            endedPolls: response.data.endedPolls || 0,
+            trendingCandidates: response.data.trendingCandidates || [],
+            popularPolls: response.data.popularPolls || [],
           });
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
       }
     };
-
     fetchStats();
   }, []);
 
@@ -434,12 +433,7 @@ const AdminDashboard = () => {
     const fetchPolls = async () => {
       try {
         setLoading(true);
-        const response = await pollService.fetchPolls({
-          page: 1,
-          limit: 50,
-          filter: {},
-        });
-
+        const response = await pollService.fetchPolls({ page: 1, limit: 50, filter: {} });
         if (response.success && response.data) {
           setPolls(response.data.data || []);
         }
@@ -449,103 +443,81 @@ const AdminDashboard = () => {
         setLoading(false);
       }
     };
-
     fetchPolls();
   }, []);
 
-  // Handle logout
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
   };
 
-  // Handle create poll
   const handleCreatePoll = async (data: CreatePollForm) => {
     try {
       setActionLoading(true);
-      const response = await pollService.createPoll({
-        title: data.title,
-        description: data.description,
-        startDate: data.startDate,
-        endDate: data.endDate,
-      });
-
+      const response = await pollService.createPoll(data);
       if (response.success) {
         toast.success("Poll created successfully!");
         setShowCreateModal(false);
-        // Refresh polls
         const pollsRes = await pollService.fetchPolls({ page: 1, limit: 50, filter: {} });
-        if (pollsRes.success) {
-          setPolls(pollsRes.data.data || []);
-        }
+        if (pollsRes.success) setPolls(pollsRes.data.data || []);
       } else {
         toast.error(response.message || "Failed to create poll");
       }
     } catch (error) {
-      console.error("Error creating poll:", error);
-      toast.error("Failed to create poll");
+      toast.error(getApiErrorMessage(error, "Failed to create poll"));
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Handle declare results
-  const handleDeclareResults = async (pollId: string) => {
-    if (!window.confirm("Are you sure you want to declare results for this poll?")) return;
+  const handleDeclareResults = async () => {
+    if (!confirmAction || confirmAction.type !== "declare") return;
 
     try {
       setActionLoading(true);
-      const response = await pollService.declareResults(pollId);
-
+      const response = await pollService.declareResults(confirmAction.pollId);
       if (response.success) {
-        toast.success("Results declared successfully! Winner has been notified.");
-        // Refresh polls
+        toast.success("Results declared successfully!");
         const pollsRes = await pollService.fetchPolls({ page: 1, limit: 50, filter: {} });
-        if (pollsRes.success) {
-          setPolls(pollsRes.data.data || []);
-        }
+        if (pollsRes.success) setPolls(pollsRes.data.data || []);
       } else {
         toast.error(response.message || "Failed to declare results");
       }
     } catch (error) {
-      console.error("Error declaring results:", error);
-      toast.error("Failed to declare results");
+      toast.error(getApiErrorMessage(error, "Failed to declare results"));
     } finally {
       setActionLoading(false);
+      setConfirmAction(null);
     }
   };
 
-  // Handle delete poll
-  const handleDeletePoll = async (pollId: string) => {
-    if (!window.confirm("Are you sure you want to delete this poll? This action cannot be undone."))
-      return;
+  const handleDeletePoll = async () => {
+    if (!confirmAction || confirmAction.type !== "delete") return;
 
     try {
       setActionLoading(true);
-      const response = await pollService.deletePoll(pollId);
-
+      const response = await pollService.deletePoll(confirmAction.pollId);
       if (response.success) {
         toast.success("Poll deleted successfully");
-        setPolls((prev) => prev.filter((p) => p._id !== pollId));
+        setPolls((prev) => prev.filter((p) => p._id !== confirmAction.pollId));
       } else {
         toast.error("Failed to delete poll");
       }
     } catch (error) {
-      console.error("Error deleting poll:", error);
-      toast.error("Failed to delete poll");
+      toast.error(getApiErrorMessage(error, "Failed to delete poll"));
     } finally {
       setActionLoading(false);
+      setConfirmAction(null);
     }
   };
 
-  // Filter polls by search
+  // Filter polls
   const filteredPolls = polls.filter(
     (poll) =>
       poll.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       poll.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Categorize polls
   const now = new Date();
   const upcomingPolls = filteredPolls.filter((p) => new Date(p.startDate) > now);
   const activePolls = filteredPolls.filter(
@@ -593,8 +565,8 @@ const AdminDashboard = () => {
         {currentView === "dashboard" && (
           <div>
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
-              <p className="text-gray-600">Monitor your voting system</p>
+              <h2 className="text-2xl font-bold">Dashboard Overview</h2>
+              <p className="text-gray-600">Monitor your voting system analytics</p>
             </div>
 
             {/* Stats Grid */}
@@ -629,7 +601,102 @@ const AdminDashboard = () => {
               />
             </div>
 
-            {/* Quick Actions */}
+            {/* Analytics Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Trending Candidates */}
+              <Card className="border-0 shadow-md">
+                <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 border-b">
+                  <CardTitle className="flex items-center text-orange-800">
+                    <Flame className="h-5 w-5 mr-2" />
+                    Trending Candidates
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  {stats.trendingCandidates.length === 0 ? (
+                    <p className="text-gray-500 text-center py-6">No trending candidates yet</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {stats.trendingCandidates.slice(0, 5).map((candidate, idx) => (
+                        <div
+                          key={candidate.candidateId}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
+                          onClick={() => navigate(`/polls/${candidate.poll._id}`)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                                idx === 0
+                                  ? "bg-yellow-500"
+                                  : idx === 1
+                                    ? "bg-gray-400"
+                                    : idx === 2
+                                      ? "bg-orange-400"
+                                      : "bg-blue-500"
+                              }`}
+                            >
+                              {idx + 1}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{candidate.user.name}</p>
+                              <p className="text-xs text-gray-500">{candidate.poll.title}</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-green-100 text-green-800 border-0">
+                            {candidate.voteCount} votes
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Popular Polls */}
+              <Card className="border-0 shadow-md">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+                  <CardTitle className="flex items-center text-purple-800">
+                    <TrendingUp className="h-5 w-5 mr-2" />
+                    Popular Polls
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  {stats.popularPolls.length === 0 ? (
+                    <p className="text-gray-500 text-center py-6">No polls with votes yet</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {stats.popularPolls.slice(0, 5).map((poll) => (
+                        <div
+                          key={poll.pollId}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
+                          onClick={() => navigate(`/polls/${poll.pollId}`)}
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900">{poll.title}</p>
+                            <Badge
+                              className={`text-xs mt-1 border-0 ${
+                                poll.status === "ACTIVE"
+                                  ? "bg-green-100 text-green-800"
+                                  : poll.status === "UPCOMING"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {poll.status}
+                            </Badge>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-purple-600">{poll.voteCount}</p>
+                            <p className="text-xs text-gray-500">votes</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Actions + Active/Needs Action */}
             <Card className="mb-8 border-0 shadow-md">
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
@@ -641,7 +708,7 @@ const AdminDashboard = () => {
                       setCurrentView("polls");
                       setShowCreateModal(true);
                     }}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create New Poll
@@ -654,7 +721,6 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Recent/Active Polls */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Active Polls */}
               <Card className="border-0 shadow-md">
@@ -675,7 +741,7 @@ const AdminDashboard = () => {
                           className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
                           onClick={() => navigate(`/polls/${poll._id}`)}
                         >
-                          <p className="font-medium text-gray-900">{poll.title}</p>
+                          <p className="font-medium">{poll.title}</p>
                           <p className="text-sm text-gray-500">
                             Ends: {new Date(poll.endDate).toLocaleDateString()}
                           </p>
@@ -686,7 +752,7 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Polls Needing Action */}
+              {/* Needs Action */}
               <Card className="border-0 shadow-md">
                 <CardHeader className="bg-yellow-50 border-b">
                   <CardTitle className="flex items-center text-yellow-800">
@@ -708,12 +774,18 @@ const AdminDashboard = () => {
                             className="p-3 bg-yellow-50 rounded-lg flex items-center justify-between"
                           >
                             <div>
-                              <p className="font-medium text-gray-900">{poll.title}</p>
+                              <p className="font-medium">{poll.title}</p>
                               <p className="text-sm text-yellow-700">Results pending</p>
                             </div>
                             <Button
                               size="sm"
-                              onClick={() => handleDeclareResults(poll._id)}
+                              onClick={() =>
+                                setConfirmAction({
+                                  type: "declare",
+                                  pollId: poll._id,
+                                  pollTitle: poll.title,
+                                })
+                              }
                               className="bg-yellow-500 hover:bg-yellow-600"
                             >
                               <Trophy className="h-4 w-4 mr-1" />
@@ -734,12 +806,12 @@ const AdminDashboard = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Manage Polls</h2>
+                <h2 className="text-2xl font-bold">Manage Polls</h2>
                 <p className="text-gray-600">Create and manage election polls</p>
               </div>
               <Button
                 onClick={() => setShowCreateModal(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="bg-gradient-to-r from-blue-600 to-purple-600"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Poll
@@ -748,7 +820,7 @@ const AdminDashboard = () => {
 
             {/* Search */}
             <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input
                 placeholder="Search polls..."
                 value={searchTerm}
@@ -770,8 +842,20 @@ const AdminDashboard = () => {
                       key={poll._id}
                       poll={poll}
                       onView={() => navigate(`/polls/${poll._id}`)}
-                      onDeclareResults={() => handleDeclareResults(poll._id)}
-                      onDelete={() => handleDeletePoll(poll._id)}
+                      onDeclareResults={() =>
+                        setConfirmAction({
+                          type: "declare",
+                          pollId: poll._id,
+                          pollTitle: poll.title,
+                        })
+                      }
+                      onDelete={() =>
+                        setConfirmAction({
+                          type: "delete",
+                          pollId: poll._id,
+                          pollTitle: poll.title,
+                        })
+                      }
                     />
                   ))}
                 </div>
@@ -790,8 +874,20 @@ const AdminDashboard = () => {
                       key={poll._id}
                       poll={poll}
                       onView={() => navigate(`/polls/${poll._id}`)}
-                      onDeclareResults={() => handleDeclareResults(poll._id)}
-                      onDelete={() => handleDeletePoll(poll._id)}
+                      onDeclareResults={() =>
+                        setConfirmAction({
+                          type: "declare",
+                          pollId: poll._id,
+                          pollTitle: poll.title,
+                        })
+                      }
+                      onDelete={() =>
+                        setConfirmAction({
+                          type: "delete",
+                          pollId: poll._id,
+                          pollTitle: poll.title,
+                        })
+                      }
                     />
                   ))}
                 </div>
@@ -810,8 +906,20 @@ const AdminDashboard = () => {
                       key={poll._id}
                       poll={poll}
                       onView={() => navigate(`/polls/${poll._id}`)}
-                      onDeclareResults={() => handleDeclareResults(poll._id)}
-                      onDelete={() => handleDeletePoll(poll._id)}
+                      onDeclareResults={() =>
+                        setConfirmAction({
+                          type: "declare",
+                          pollId: poll._id,
+                          pollTitle: poll.title,
+                        })
+                      }
+                      onDelete={() =>
+                        setConfirmAction({
+                          type: "delete",
+                          pollId: poll._id,
+                          pollTitle: poll.title,
+                        })
+                      }
                     />
                   ))}
                 </div>
@@ -841,6 +949,22 @@ const AdminDashboard = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreatePoll}
+        loading={actionLoading}
+      />
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={!!confirmAction}
+        title={confirmAction?.type === "declare" ? "Declare Results?" : "Delete Poll?"}
+        message={
+          confirmAction?.type === "declare"
+            ? `Are you sure you want to declare results for "${confirmAction?.pollTitle}"? The winner will be notified.`
+            : `Are you sure you want to delete "${confirmAction?.pollTitle}"? This action cannot be undone.`
+        }
+        confirmLabel={confirmAction?.type === "declare" ? "Declare Results" : "Delete"}
+        variant={confirmAction?.type === "declare" ? "warning" : "danger"}
+        onConfirm={confirmAction?.type === "declare" ? handleDeclareResults : handleDeletePoll}
+        onCancel={() => setConfirmAction(null)}
         loading={actionLoading}
       />
     </div>

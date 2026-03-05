@@ -3,16 +3,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import analyticService from "@/services/analyticService";
 import candidateService from "@/services/candidateService";
 import pollService, { PollWithCandidates } from "@/services/pollService";
 import voteService, { VoteStatusResponse } from "@/services/voteService";
 import { RootState } from "@/store/store";
+import { getApiErrorMessage } from "@/utils/errorHelper";
 import {
   AlertCircle,
   ArrowLeft,
   Calendar,
   CheckCircle,
+  ChevronUp,
   Clock,
+  Eye,
   FileText,
   TrendingUp,
   Trophy,
@@ -31,6 +35,7 @@ export const PollDetailPage = () => {
   const navigate = useNavigate();
   const auth = useSelector((state: RootState) => state.auth);
   const isAuthenticated = Boolean(auth.token && auth.decodedToken);
+  const isAdmin = auth.decodedToken?.role === "ADMIN";
 
   // State
   const [pollData, setPollData] = useState<PollWithCandidates | null>(null);
@@ -46,6 +51,16 @@ export const PollDetailPage = () => {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [manifesto, setManifesto] = useState("");
   const [registering, setRegistering] = useState(false);
+
+  // Admin voter details
+  const [expandedCandidate, setExpandedCandidate] = useState<string | null>(null);
+  const [voters, setVoters] = useState<
+    {
+      voter?: { name?: string; email?: string };
+      createdAt?: string;
+    }[]
+  >([]);
+  const [loadingVoters, setLoadingVoters] = useState(false);
 
   // Computed values
   const poll = pollData?.poll;
@@ -115,9 +130,7 @@ export const PollDetailPage = () => {
         setError(response.message || "Failed to cast vote");
       }
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to cast vote. Please try again.";
-      setError(errorMessage);
+      setError(getApiErrorMessage(err, "Failed to cast vote. Please try again."));
     } finally {
       setVoting(false);
     }
@@ -146,11 +159,37 @@ export const PollDetailPage = () => {
         setError(response.message || "Failed to register as candidate");
       }
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to register. Please try again.";
-      setError(errorMessage);
+      setError(getApiErrorMessage(err, "Failed to register. Please try again."));
     } finally {
       setRegistering(false);
+    }
+  };
+
+  // Fetch voters for a candidate (admin only)
+  const fetchVoters = async (candidateId: string) => {
+    if (!pollId || !isAdmin) return;
+
+    if (expandedCandidate === candidateId) {
+      // Collapse if already expanded
+      setExpandedCandidate(null);
+      setVoters([]);
+      return;
+    }
+
+    try {
+      setExpandedCandidate(candidateId);
+      setLoadingVoters(true);
+      const response = await analyticService.getVotersForCandidate(pollId, candidateId, 1, 100);
+
+      if (response.success) {
+        setVoters(response.data.voters || []);
+      } else {
+        setError("Failed to load voter details");
+      }
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Failed to load voters. Please try again."));
+    } finally {
+      setLoadingVoters(false);
     }
   };
 
@@ -531,6 +570,78 @@ export const PollDetailPage = () => {
                           </>
                         )}
                       </Button>
+                    )}
+
+                    {/* Admin: View Voters Button */}
+                    {isAdmin && (candidate.voteCount || 0) > 0 && (
+                      <Button
+                        onClick={() => fetchVoters(candidate._id)}
+                        variant="outline"
+                        className="w-full mt-2"
+                        disabled={loadingVoters}
+                      >
+                        {loadingVoters && expandedCandidate === candidate._id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-600 border-t-transparent mr-2" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            {expandedCandidate === candidate._id ? (
+                              <>
+                                <ChevronUp className="h-4 w-4 mr-2" />
+                                Hide Voters
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Voters ({candidate.voteCount})
+                              </>
+                            )}
+                          </>
+                        )}
+                      </Button>
+                    )}
+
+                    {/* Admin: Voters List */}
+                    {isAdmin && expandedCandidate === candidate._id && voters.length > 0 && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                          Voters ({voters.length})
+                        </h4>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {voters.map((voter, vIdx) => (
+                            <div
+                              key={vIdx}
+                              className="flex items-center justify-between p-2 bg-white rounded border border-gray-100"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                                  {voter.voter?.name?.charAt(0).toUpperCase() || "?"}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {voter.voter?.name || "Unknown"}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {voter.voter?.email || "No email"}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {voter.createdAt
+                                  ? new Date(voter.createdAt).toLocaleString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "N/A"}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
 
                     {status === "ENDED" && !poll.isResultDeclared && (

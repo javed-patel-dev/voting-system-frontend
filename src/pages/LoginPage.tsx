@@ -1,9 +1,5 @@
-import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { Eye, EyeOff, Vote, Mail, Lock, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -12,11 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import authService from "@/services/authService.ts";
-import decodeJWT from "@/utils/jwt.ts";
 import { setAuth } from "@/store/slices/authSlice";
+import { getApiErrorMessage } from "@/utils/errorHelper";
+import decodeJWT from "@/utils/jwt.ts";
+import { AlertCircle, Eye, EyeOff, Lock, Mail, Vote } from "lucide-react";
+import { useState } from "react";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
@@ -79,8 +79,7 @@ export default function LoginPage() {
         setError(response.message || "Login failed");
       }
     } catch (error) {
-      const err = error as { response?: { data?: { data?: { reason?: { message?: string } } } } };
-      setError(err.response?.data?.data?.reason?.message || "Failed to log in. Please try again.");
+      setError(getApiErrorMessage(error, "Failed to log in. Please try again."));
     } finally {
       setLoading(false);
     }

@@ -5,10 +5,10 @@ import { PollGrid } from "@/components/PollGrid";
 
 export default function VoterLanding() {
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <HeroSection />
-      <div>
+      <div id="polls-section" className="scroll-mt-4">
         <PollGrid />
       </div>
       <Footer />

@@ -13,8 +13,6 @@ import VoterLanding from "./pages/VoterLanding";
 function App() {
   const auth = useSelector((state: RootState) => state.auth);
 
-  console.log("Auth state:", auth);
-
   // Helper function to determine if user is authenticated
   const isAuthenticated = Boolean(auth.token && auth.decodedToken);
   const userRole = auth.decodedToken?.role;
@@ -68,7 +66,7 @@ function App() {
           }
         />
 
-        {/* Protected Voter route */}
+        {/* Protected Voter/Candidate route */}
         <Route
           path="/home"
           element={
@@ -82,7 +80,7 @@ function App() {
         <Route
           path="/profile"
           element={
-            <ProtectedRoute allowedRoles={["VOTER", "ADMIN"]}>
+            <ProtectedRoute allowedRoles={["VOTER", "ADMIN", "CANDIDATE"]}>
               <ProfilePage />
             </ProtectedRoute>
           }
@@ -101,8 +99,29 @@ function App() {
           }
         />
 
+        {/* Unauthorized page */}
+        <Route
+          path="/unauthorized"
+          element={
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+              <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+                <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+                <p className="text-gray-600 mb-6">
+                  You do not have permission to access this page.
+                </p>
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Go Back
+                </button>
+              </div>
+            </div>
+          }
+        />
+
         {/* Catch all other routes */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? "/home" : "/login"} replace />} />
       </Routes>
     </BrowserRouter>
   );
