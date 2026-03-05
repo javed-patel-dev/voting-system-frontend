@@ -64,7 +64,6 @@ export default function ProfilePage() {
   const auth = useSelector((state: RootState) => state.auth);
   const user = auth.decodedToken;
 
-  // State
   const [votingHistory, setVotingHistory] = useState<VotingHistory[]>([]);
   const [candidacyHistory, setCandidacyHistory] = useState<CandidacyHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,13 +73,11 @@ export default function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"profile" | "votes" | "candidacies">("profile");
 
-  // Form state for profile editing
   const [profileForm, setProfileForm] = useState({
     name: "",
     bio: "",
   });
 
-  // Fetch user history
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -114,7 +111,6 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-  // Handle profile update
   const handleProfileUpdate = async () => {
     try {
       setSaving(true);
@@ -139,7 +135,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Format date
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
@@ -148,7 +143,6 @@ export default function ProfilePage() {
     });
   };
 
-  // Format datetime
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
@@ -161,7 +155,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <p className="text-gray-600">Please login to view your profile</p>
@@ -174,12 +168,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
 
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <Button
             variant="ghost"
             onClick={() => navigate("/home")}
@@ -190,39 +184,37 @@ export default function ProfilePage() {
           </Button>
 
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center text-4xl font-bold">
+            <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-3xl font-bold">
               {user.name?.charAt(0).toUpperCase() || "U"}
             </div>
             <div>
-              <h1 className="text-3xl font-bold">{user.name}</h1>
+              <h1 className="text-2xl font-bold">{user.name}</h1>
               <p className="text-white/80 flex items-center gap-2 mt-1">
                 <Mail className="h-4 w-4" />
                 {user.email}
               </p>
-              <div className="flex gap-3 mt-3">
-                <Badge className="bg-white/20 text-white border-white/30">{user.role}</Badge>
-              </div>
+              <Badge className="mt-2 bg-white/20 text-white border-white/30">{user.role}</Badge>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-6 border-b border-gray-200">
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
           {[
             { id: "profile", label: "Profile", icon: UserCircle },
-            { id: "votes", label: "Voting History", icon: Vote },
+            { id: "votes", label: "My Votes", icon: Vote },
             { id: "candidacies", label: "Candidacies", icon: UserPlus },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
                 activeTab === tab.id
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               <tab.icon className="h-4 w-4" />
@@ -249,7 +241,7 @@ export default function ProfilePage() {
         {/* Profile Tab */}
         {activeTab === "profile" && (
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
+            <Card className="shadow-md border-0">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
@@ -311,22 +303,22 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3 py-2 border-b">
-                      <User className="h-4 w-4 text-gray-500" />
+                    <div className="flex items-center gap-3 py-3 border-b">
+                      <User className="h-4 w-4 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-500">Name</p>
                         <p className="font-medium">{user.name}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 py-2 border-b">
-                      <Mail className="h-4 w-4 text-gray-500" />
+                    <div className="flex items-center gap-3 py-3 border-b">
+                      <Mail className="h-4 w-4 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-500">Email</p>
                         <p className="font-medium">{user.email}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 py-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
+                    <div className="flex items-center gap-3 py-3">
+                      <Calendar className="h-4 w-4 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-500">Role</p>
                         <p className="font-medium">{user.role}</p>
@@ -337,7 +329,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-md border-0">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <History className="h-5 w-5" />
@@ -359,24 +351,6 @@ export default function ProfilePage() {
                     <div className="text-sm text-gray-600">Candidacies</div>
                   </div>
                 </div>
-
-                {candidacyHistory.filter(
-                  (c) => c.pollId.isResultDeclared && c.pollId.winnerId === c._id
-                ).length > 0 && (
-                  <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="flex items-center gap-2 text-yellow-800">
-                      <Trophy className="h-5 w-5" />
-                      <span className="font-medium">
-                        {
-                          candidacyHistory.filter(
-                            (c) => c.pollId.isResultDeclared && c.pollId.winnerId === c._id
-                          ).length
-                        }{" "}
-                        Elections Won!
-                      </span>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -384,7 +358,7 @@ export default function ProfilePage() {
 
         {/* Voting History Tab */}
         {activeTab === "votes" && (
-          <Card>
+          <Card className="shadow-md border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Vote className="h-5 w-5" />
@@ -409,11 +383,11 @@ export default function ProfilePage() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {votingHistory.map((vote) => (
                     <div
                       key={vote._id}
-                      className="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
                       onClick={() => navigate(`/polls/${vote.pollId._id}`)}
                     >
                       <div className="flex items-start justify-between">
@@ -422,15 +396,14 @@ export default function ProfilePage() {
                           <p className="text-sm text-gray-600 mt-1">
                             Voted for:{" "}
                             <span className="font-medium text-purple-600">
-                              {vote.candidateId?.userId?.name || "Unknown Candidate"}
+                              {vote.candidateId?.userId?.name || "Unknown"}
                             </span>
                           </p>
                           <p className="text-xs text-gray-500 mt-2">
-                            <Calendar className="h-3 w-3 inline mr-1" />
                             {formatDateTime(vote.createdAt)}
                           </p>
                         </div>
-                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                        <Badge className="bg-green-100 text-green-800 border-0">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Voted
                         </Badge>
@@ -445,7 +418,7 @@ export default function ProfilePage() {
 
         {/* Candidacies Tab */}
         {activeTab === "candidacies" && (
-          <Card>
+          <Card className="shadow-md border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5" />
@@ -472,7 +445,7 @@ export default function ProfilePage() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {candidacyHistory.map((candidacy) => {
                     const isWinner =
                       candidacy.pollId.isResultDeclared &&
@@ -481,10 +454,8 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={candidacy._id}
-                        className={`p-4 border rounded-lg transition-colors cursor-pointer ${
-                          isWinner
-                            ? "bg-yellow-50 border-yellow-200 hover:bg-yellow-100"
-                            : "hover:bg-gray-50"
+                        className={`p-4 border rounded-lg cursor-pointer ${
+                          isWinner ? "bg-yellow-50 border-yellow-200" : "hover:bg-gray-50"
                         }`}
                         onClick={() => navigate(`/polls/${candidacy.pollId._id}`)}
                       >
@@ -501,7 +472,6 @@ export default function ProfilePage() {
                             </p>
                             <div className="flex items-center gap-4 mt-2 text-sm">
                               <span className="text-gray-500">
-                                <Calendar className="h-3 w-3 inline mr-1" />
                                 {formatDate(candidacy.pollId.startDate)} -{" "}
                                 {formatDate(candidacy.pollId.endDate)}
                               </span>
@@ -510,20 +480,16 @@ export default function ProfilePage() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex flex-col items-end gap-2">
+                          <div>
                             {isWinner ? (
-                              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                              <Badge className="bg-yellow-100 text-yellow-800 border-0">
                                 <Trophy className="h-3 w-3 mr-1" />
                                 Winner
                               </Badge>
                             ) : candidacy.pollId.isResultDeclared ? (
-                              <Badge className="bg-gray-100 text-gray-800 border-gray-200">
-                                Election Ended
-                              </Badge>
+                              <Badge className="bg-gray-100 text-gray-800 border-0">Ended</Badge>
                             ) : (
-                              <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                                In Progress
-                              </Badge>
+                              <Badge className="bg-blue-100 text-blue-800 border-0">Active</Badge>
                             )}
                           </div>
                         </div>
